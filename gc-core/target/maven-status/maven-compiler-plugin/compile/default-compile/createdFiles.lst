@@ -1,0 +1,6 @@
+com\ghostcraft\core\conversation\ConversationManager$Assistant.class
+com\ghostcraft\core\skill\SkillRegistry.class
+com\ghostcraft\core\model\Session.class
+com\ghostcraft\core\skill\Skill.class
+com\ghostcraft\core\conversation\ConversationManager$SessionAgent.class
+com\ghostcraft\core\conversation\ConversationManager.class

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="Encoding">
+    <file url="file://$PROJECT_DIR$/gc-core/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/gc-core/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/gc-hook/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/gc-hook/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/gc-mcp/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/gc-mcp/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/gc-memory/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/gc-memory/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/gc-security/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/gc-security/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/gc-skill-basic/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/gc-skill-basic/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/gc-skill/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/gc-skill/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/gc-subagent/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/gc-subagent/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/gc-team/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/gc-team/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/gc-terminal/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/gc-terminal/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/src/main/resources" charset="UTF-8" />
+  </component>
+</project>
