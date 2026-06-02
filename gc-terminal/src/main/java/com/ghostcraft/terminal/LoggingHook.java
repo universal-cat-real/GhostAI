@@ -1,6 +1,8 @@
 package com.ghostcraft.terminal;
 
 import com.ghostcraft.core.hook.Hook;
+import org.springframework.stereotype.Component;
+
 import java.time.LocalTime;
 
 /**
@@ -8,6 +10,7 @@ import java.time.LocalTime;
  *
  * 作用：演示 Hook 怎么写。每段对话都会打印日志。
  */
+@Component
 public class LoggingHook implements Hook {
 
     @Override

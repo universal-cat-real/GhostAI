@@ -1,7 +1,9 @@
 package com.ghostcraft.core.hook;
 
+import com.ghostcraft.core.security.PermissionManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -12,6 +14,9 @@ public class HookRegistry {
 
     private static final Logger log = LoggerFactory.getLogger(HookRegistry.class);
     private final List<Hook> hooks = new ArrayList<>();
+
+    @Autowired
+    private PermissionManager permissionManager;
 
     public void register(Hook hook) {
         hooks.add(hook);
@@ -30,9 +35,24 @@ public class HookRegistry {
         }
     }
 
+    /**
+     * 工具权限检查
+     * @param sessionId
+     * @param toolName
+     * @param arguments
+     * @return
+     */
     public boolean fireOnToolCall(String sessionId, String toolName, String arguments) {
+        String reason = permissionManager.checkPermission(toolName);
+        if (reason != null) {
+            log.warn("工具调用被拦截: {} — {}", toolName, reason);
+            System.out.println("  [安全] " + reason);
+            return false;
+        }
         for (Hook hook : hooks) {
-            if (!hook.onToolCall(sessionId, toolName, arguments)) return false;
+            if (!hook.onToolCall(sessionId, toolName, arguments)) {
+                return false;
+            }
         }
         return true;
     }

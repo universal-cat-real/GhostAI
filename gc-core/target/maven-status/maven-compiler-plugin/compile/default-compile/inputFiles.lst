@@ -4,6 +4,15 @@ D:\java_study\ghostcraft\gc-core\src\main\java\com\ghostcraft\core\command\Comma
 D:\java_study\ghostcraft\gc-core\src\main\java\com\ghostcraft\core\conversation\ConversationManager.java
 D:\java_study\ghostcraft\gc-core\src\main\java\com\ghostcraft\core\hook\Hook.java
 D:\java_study\ghostcraft\gc-core\src\main\java\com\ghostcraft\core\hook\HookRegistry.java
+D:\java_study\ghostcraft\gc-core\src\main\java\com\ghostcraft\core\hook\PersistHook.java
+D:\java_study\ghostcraft\gc-core\src\main\java\com\ghostcraft\core\hook\TokenCounterHook.java
 D:\java_study\ghostcraft\gc-core\src\main\java\com\ghostcraft\core\model\Session.java
+D:\java_study\ghostcraft\gc-core\src\main\java\com\ghostcraft\core\security\PermissionManager.java
+D:\java_study\ghostcraft\gc-core\src\main\java\com\ghostcraft\core\security\ToolPolicy.java
 D:\java_study\ghostcraft\gc-core\src\main\java\com\ghostcraft\core\skill\Skill.java
 D:\java_study\ghostcraft\gc-core\src\main\java\com\ghostcraft\core\skill\SkillRegistry.java
+D:\java_study\ghostcraft\gc-core\src\main\java\com\ghostcraft\core\store\SessionStore.java
+D:\java_study\ghostcraft\gc-core\src\main\java\com\ghostcraft\core\subtask\SubTask.java
+D:\java_study\ghostcraft\gc-core\src\main\java\com\ghostcraft\core\subtask\SubTaskManager.java
+D:\java_study\ghostcraft\gc-core\src\main\java\com\ghostcraft\core\tools\SessionTool.java
+D:\java_study\ghostcraft\gc-core\src\main\java\com\ghostcraft\core\tools\SubTaskTool.java

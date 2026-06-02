@@ -13,10 +13,6 @@
     <description>权限防御：工具执行策略、敏感操作确认</description>
     <dependencies>
         <dependency>
-            <groupId>com.ghostcraft</groupId>
-            <artifactId>gc-core</artifactId>
-        </dependency>
-        <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
         </dependency>

@@ -44,6 +44,14 @@ public class Session {
         this.updated = LocalDateTime.now();
     }
 
+    /** 使用指定 id 创建会话（从持久化恢复时用） */
+    public Session(String id, String name) {
+        this.id = id;
+        this.name = name;
+        this.created = LocalDateTime.now();
+        this.updated = LocalDateTime.now();
+    }
+
     /**
      * 更新最后活跃时间
      */
