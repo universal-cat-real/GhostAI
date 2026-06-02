@@ -13,6 +13,10 @@
     <description>核心框架：会话管理、消息总线、模型定义</description>
     <dependencies>
         <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter</artifactId>
+        </dependency>
+        <dependency>
             <groupId>dev.langchain4j</groupId>
             <artifactId>langchain4j</artifactId>
         </dependency>
@@ -28,5 +32,6 @@
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
         </dependency>
+        <!-- Hook 已合并到 gc-core 内部，无需额外依赖 -->
     </dependencies>
 </project>

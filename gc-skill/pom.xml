@@ -16,10 +16,7 @@
             <groupId>com.ghostcraft</groupId>
             <artifactId>gc-core</artifactId>
         </dependency>
-        <dependency>
-            <groupId>com.ghostcraft</groupId>
-            <artifactId>gc-hook</artifactId>
-        </dependency>
+        <!-- gc-hook 已合并到 gc-core，Hook 在 gc-core 中 -->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>

@@ -1,5 +1,6 @@
 package com.ghostcraft.core.command;
 
+import org.springframework.stereotype.Component;
 import java.util.*;
 
 /**
@@ -7,6 +8,7 @@ import java.util.*;
  *
  * 作用：统一管理所有命令，支持别名。
  */
+@Component
 public class CommandRegistry {
 
     private final Map<String, Command> commands = new LinkedHashMap<>();

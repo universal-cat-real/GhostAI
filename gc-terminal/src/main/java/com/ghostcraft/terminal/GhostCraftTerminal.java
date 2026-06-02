@@ -3,19 +3,22 @@ package com.ghostcraft.terminal;
 import com.ghostcraft.core.command.Command;
 import com.ghostcraft.core.command.CommandRegistry;
 import com.ghostcraft.core.conversation.ConversationManager;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
+import jakarta.annotation.PostConstruct;
 import java.util.List;
 import java.util.Scanner;
 
-/**
- * GhostCraft 命令行终端
- *
- * 作用：用户交互入口。命令交给 CommandRegistry，对话交给 ConversationManager。
- */
+@Component
 public class GhostCraftTerminal {
 
-    private final ConversationManager cm;
-    private final CommandRegistry registry;
+    @Autowired
+    private ConversationManager cm;
+
+    @Autowired
+    private CommandRegistry registry;
+
     private String currentSessionId;
 
     @FunctionalInterface
@@ -23,11 +26,11 @@ public class GhostCraftTerminal {
         String handle(String args);
     }
 
-    public GhostCraftTerminal(String apiKey) {
-        this.cm = new ConversationManager(apiKey);
-        this.registry = new CommandRegistry();
+    @PostConstruct
+    public void init() {
         this.currentSessionId = cm.createSession("default");
         loadSkills();
+        loadHooks();
         registerCommands();
     }
 
@@ -41,13 +44,18 @@ public class GhostCraftTerminal {
         System.out.println("技能包加载完成，共 " + cm.getSkillRegistry().count() + " 个");
     }
 
+    private void loadHooks() {
+        System.out.println("正在加载钩子...");
+        cm.getHookRegistry().register(new LoggingHook());
+        System.out.println("钩子加载完成，共 " + cm.getHookRegistry().count() + " 个");
+    }
+
     private void registerCommands() {
         simple("help", "显示此帮助", args -> registry.helpText());
         simple("exit", "退出程序", args -> { System.out.println("再见！"); System.exit(0); return ""; });
         simple("clear", "清除当前会话记忆", args -> { cm.clearMemory(currentSessionId); return "已清除记忆"; });
         simple("count", "显示会话总数", args -> "当前共 " + cm.sessionCount() + " 个会话");
         simple("skills", "列出已加载的技能包", args -> formatSkills());
-
         registry.register(new Command() {
             public String name() { return "new"; }
             public String description() { return "创建新会话"; }
@@ -69,8 +77,7 @@ public class GhostCraftTerminal {
                 if (sessions.isEmpty()) return "暂无会话";
                 StringBuilder sb = new StringBuilder("会话列表：\n");
                 for (var s : sessions) {
-                    sb.append("  [").append(s.getId()).append("] ")
-                            .append(s.getName()).append("\n");
+                    sb.append("  [").append(s.getId()).append("] ").append(s.getName()).append("\n");
                 }
                 return sb.toString();
             }
@@ -111,9 +118,5 @@ public class GhostCraftTerminal {
                 System.out.println(cm.chat(currentSessionId, input));
             }
         }
-    }
-
-    public static void main(String[] args) {
-        new GhostCraftTerminal("sk-0a686b9b02ae4a4699adadbe7912b04d").start();
     }
 }

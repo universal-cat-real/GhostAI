@@ -1,5 +1,6 @@
 package com.ghostcraft.core.skill;
 
+import org.springframework.stereotype.Component;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -10,6 +11,7 @@ import java.util.Map;
  * 作用：管理所有已加载的技能包。
  * 提供技能包列表，供 ConversationManager 在创建 Agent 时注册工具。
  */
+@Component
 public class SkillRegistry {
 
     private final Map<String, Skill> skills = new LinkedHashMap<>();

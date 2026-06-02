@@ -1,2 +1,5 @@
+com\ghostcraft\terminal\GhostCraftApplication.class
+com\ghostcraft\terminal\TokenCounterHook.class
 com\ghostcraft\terminal\GhostCraftTerminal$CommandHandler.class
 com\ghostcraft\terminal\GhostCraftTerminal.class
+com\ghostcraft\terminal\LoggingHook.class

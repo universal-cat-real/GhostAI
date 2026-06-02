@@ -1,5 +1,6 @@
 package com.ghostcraft.core.conversation;
 
+import com.ghostcraft.core.hook.HookRegistry;
 import com.ghostcraft.core.model.Session;
 import com.ghostcraft.core.skill.SkillRegistry;
 import dev.langchain4j.memory.ChatMemory;
@@ -7,32 +8,28 @@ import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.openai.OpenAiChatModel;
 import dev.langchain4j.service.AiServices;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * 会话管理器
- * 每个会话有独立的 agent + memory
- * 每个会话互不干扰
- */
+@Component
 public class ConversationManager {
 
-    private final ChatModel model;
-    private final SkillRegistry skillRegistry;
-    private final Map<String, SessionAgent> sessions;
+    @Autowired
+    private SkillRegistry skillRegistry;
 
-    public ConversationManager(String appkey) {
-        this.model = OpenAiChatModel.builder()
-                .apiKey(appkey)
-                .baseUrl("https://api.deepseek.com")
-                .modelName("deepseek-chat")
-                .temperature(0.7)
-                .build();
-        this.sessions = new HashMap<>();
-        this.skillRegistry = new SkillRegistry();
-    }
+    @Autowired
+    private HookRegistry hookRegistry;
+
+    private ChatModel model;
+    private final Map<String, SessionAgent> sessions = new HashMap<>();
+
+    @Value("${ghostcraft.api-key}")
+    private String apiKey;
 
     public interface Assistant {
         String chat(String userMessage);
@@ -48,15 +45,12 @@ public class ConversationManager {
             this.memory = MessageWindowChatMemory.builder()
                     .maxMessages(20)
                     .build();
-
             var builder = AiServices.builder(Assistant.class)
                     .chatModel(model)
                     .chatMemory(memory);
-
             if (tools != null && !tools.isEmpty()) {
                 builder.tools(tools.toArray());
             }
-
             this.agent = builder.build();
         }
 
@@ -66,13 +60,29 @@ public class ConversationManager {
         }
     }
 
+    private ChatModel getOrCreateModel() {
+        if (model == null) {
+            model = OpenAiChatModel.builder()
+                    .apiKey(apiKey)
+                    .baseUrl("https://api.deepseek.com")
+                    .modelName("deepseek-chat")
+                    .temperature(0.7)
+                    .build();
+        }
+        return model;
+    }
+
     public SkillRegistry getSkillRegistry() {
         return skillRegistry;
     }
 
+    public HookRegistry getHookRegistry() {
+        return hookRegistry;
+    }
+
     public String createSession(String name) {
         Session s = new Session(name);
-        sessions.put(s.getId(), new SessionAgent(s, model, skillRegistry.allToolInstances()));
+        sessions.put(s.getId(), new SessionAgent(s, getOrCreateModel(), skillRegistry.allToolInstances()));
         return s.getId();
     }
 
@@ -81,13 +91,19 @@ public class ConversationManager {
         if (sa == null) {
             return "会话不存在：" + sessionId;
         }
-        return sa.chat(message);
+        hookRegistry.fireBeforeChat(sessionId, message);
+        try {
+            String answer = sa.chat(message);
+            hookRegistry.fireAfterChat(sessionId, message, answer);
+            return answer;
+        } catch (Exception e) {
+            hookRegistry.fireOnError(sessionId, message, e);
+            return "处理出错：" + e.getMessage();
+        }
     }
 
     public List<Session> listSessions() {
-        return sessions.values().stream()
-                .map(sa -> sa.session)
-                .toList();
+        return sessions.values().stream().map(sa -> sa.session).toList();
     }
 
     public void clearMemory(String sessionId) {

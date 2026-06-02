@@ -15,12 +15,14 @@
         <module name="gc-terminal" />
         <module name="gc-mcp" />
         <module name="gc-security" />
-        <module name="gc-hook" />
         <module name="gc-core" />
         <module name="gc-memory" />
         <module name="gc-team" />
         <module name="gc-skill-basic" />
       </profile>
     </annotationProcessing>
+    <bytecodeTargetLevel>
+      <module name="gc-hook" target="17" />
+    </bytecodeTargetLevel>
   </component>
 </project>
