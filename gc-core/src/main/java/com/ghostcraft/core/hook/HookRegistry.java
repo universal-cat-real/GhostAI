@@ -1,22 +1,21 @@
 package com.ghostcraft.core.hook;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
+
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * 钩子注册器
- *
- * 作用：管理所有钩子，按阶段依次触发。
- */
 @Component
 public class HookRegistry {
 
+    private static final Logger log = LoggerFactory.getLogger(HookRegistry.class);
     private final List<Hook> hooks = new ArrayList<>();
 
     public void register(Hook hook) {
         hooks.add(hook);
-        System.out.println("  [钩子] 已注册: " + hook.name());
+        log.info("已注册钩子: {}", hook.name());
     }
 
     public void fireBeforeChat(String sessionId, String userMessage) {
@@ -33,9 +32,7 @@ public class HookRegistry {
 
     public boolean fireOnToolCall(String sessionId, String toolName, String arguments) {
         for (Hook hook : hooks) {
-            if (!hook.onToolCall(sessionId, toolName, arguments)) {
-                return false;
-            }
+            if (!hook.onToolCall(sessionId, toolName, arguments)) return false;
         }
         return true;
     }
@@ -46,11 +43,6 @@ public class HookRegistry {
         }
     }
 
-    public List<Hook> list() {
-        return List.copyOf(hooks);
-    }
-
-    public int count() {
-        return hooks.size();
-    }
+    public List<Hook> list() { return List.copyOf(hooks); }
+    public int count() { return hooks.size(); }
 }

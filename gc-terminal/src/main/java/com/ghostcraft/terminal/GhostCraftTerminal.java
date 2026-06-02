@@ -3,15 +3,19 @@ package com.ghostcraft.terminal;
 import com.ghostcraft.core.command.Command;
 import com.ghostcraft.core.command.CommandRegistry;
 import com.ghostcraft.core.conversation.ConversationManager;
+import jakarta.annotation.PostConstruct;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import jakarta.annotation.PostConstruct;
 import java.util.List;
 import java.util.Scanner;
 
 @Component
 public class GhostCraftTerminal {
+
+    private static final Logger log = LoggerFactory.getLogger(GhostCraftTerminal.class);
 
     @Autowired
     private ConversationManager cm;
@@ -35,19 +39,19 @@ public class GhostCraftTerminal {
     }
 
     private void loadSkills() {
-        System.out.println("正在加载技能包...");
+        log.info("正在加载技能包...");
         try {
             cm.getSkillRegistry().register(new com.ghostcraft.skillbasic.SystemSkill());
         } catch (Exception e) {
-            System.out.println("  [技能] 加载失败: " + e.getMessage());
+            log.warn("技能包加载失败: {}", e.getMessage());
         }
-        System.out.println("技能包加载完成，共 " + cm.getSkillRegistry().count() + " 个");
+        log.info("技能包加载完成，共 {} 个", cm.getSkillRegistry().count());
     }
 
     private void loadHooks() {
-        System.out.println("正在加载钩子...");
+        log.info("正在加载钩子...");
         cm.getHookRegistry().register(new LoggingHook());
-        System.out.println("钩子加载完成，共 " + cm.getHookRegistry().count() + " 个");
+        log.info("钩子加载完成，共 {} 个", cm.getHookRegistry().count());
     }
 
     private void registerCommands() {
@@ -56,6 +60,7 @@ public class GhostCraftTerminal {
         simple("clear", "清除当前会话记忆", args -> { cm.clearMemory(currentSessionId); return "已清除记忆"; });
         simple("count", "显示会话总数", args -> "当前共 " + cm.sessionCount() + " 个会话");
         simple("skills", "列出已加载的技能包", args -> formatSkills());
+
         registry.register(new Command() {
             public String name() { return "new"; }
             public String description() { return "创建新会话"; }
@@ -85,7 +90,7 @@ public class GhostCraftTerminal {
     }
 
     private void simple(String name, String description, CommandHandler handler) {
-        registry.register(new Command() {
+        registry.register(new Command() { 
             public String name() { return name; }
             public String description() { return description; }
             public String execute(String args) { return handler.handle(args); }
@@ -114,8 +119,10 @@ public class GhostCraftTerminal {
             if (input.startsWith("/")) {
                 System.out.println(registry.execute(input));
             } else {
+                log.info("用户输入: {} (会话: {})", input, currentSessionId);
                 System.out.print("Agent：");
-                System.out.println(cm.chat(currentSessionId, input));
+                String answer = cm.chat(currentSessionId, input);
+                System.out.println(answer);
             }
         }
     }

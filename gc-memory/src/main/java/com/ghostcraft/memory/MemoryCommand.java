@@ -4,6 +4,8 @@ import com.ghostcraft.core.command.Command;
 
 public class MemoryCommand implements Command {
 
+    private
+
     @Override
     public String name() {
         return "memory";
