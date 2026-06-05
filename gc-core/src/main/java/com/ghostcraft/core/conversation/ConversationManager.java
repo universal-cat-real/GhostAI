@@ -3,13 +3,16 @@ package com.ghostcraft.core.conversation;
 import com.ghostcraft.core.hook.HookRegistry;
 import com.ghostcraft.core.hook.PersistHook;
 import com.ghostcraft.core.hook.TokenCounterHook;
-import com.ghostcraft.core.skill.Skill;
 import com.ghostcraft.core.model.Session;
+import com.ghostcraft.core.skill.FileSkillLoader;
+import com.ghostcraft.core.skill.Skill;
 import com.ghostcraft.core.skill.SkillRegistry;
-import com.ghostcraft.core.tools.SessionTool;
-import com.ghostcraft.core.tools.SubTaskTool;
 import com.ghostcraft.core.store.SessionStore;
 import com.ghostcraft.core.subtask.SubTaskManager;
+import com.ghostcraft.core.mcp.McpIntegration;
+import dev.langchain4j.mcp.McpToolProvider;
+import com.ghostcraft.core.tools.GhostTool;
+import com.ghostcraft.core.agent.SubAgentManager;
 import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.SystemMessage;
@@ -17,7 +20,7 @@ import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.memory.ChatMemory;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 import dev.langchain4j.model.chat.ChatModel;
-import dev.langchain4j.model.openai.OpenAiChatModel;
+
 import dev.langchain4j.service.AiServices;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
@@ -40,6 +43,9 @@ public class ConversationManager {
     private SkillRegistry skillRegistry;
 
     @Autowired
+    private FileSkillLoader fileSkillLoader;
+
+    @Autowired
     private HookRegistry hookRegistry;
 
     @Autowired
@@ -49,17 +55,25 @@ public class ConversationManager {
     private SessionStore sessionStore;
 
     @Autowired
-    private SessionTool sessionTool;
-
-    @Autowired
-    private SubTaskTool subTaskTool;
-
-    @Autowired
     private SubTaskManager subTaskManager;
+
+    @Autowired
+    private List<GhostTool> autoTools;
+
+    @Autowired
+    private McpIntegration mcpIntegration;
+
+    @Autowired
+    private SubAgentManager subAgentManager;
+
+    private McpToolProvider mcpToolProvider;
 
     private ChatModel model;
     private final Map<String, SessionAgent> sessions = new HashMap<>();
     private String activeSessionId;
+
+    @Autowired
+    private ChatModel chatModel;
 
     @Value("${ghostcraft.api-key}")
     private String apiKey;
@@ -73,14 +87,32 @@ public class ConversationManager {
         final Assistant agent;
         final ChatMemory memory;
 
-        SessionAgent(Session session, ChatModel model, List<Object> tools) {
+        SessionAgent(Session session, ChatModel model,
+                     List<Object> skillTools, List<GhostTool> autoTools,
+                     SkillRegistry skillReg, FileSkillLoader fileSkillLoader,
+                     McpToolProvider mcpToolProvider) {
             this.session = session;
             this.memory = MessageWindowChatMemory.builder().maxMessages(20).build();
+            String sysMsg = "你是一个 AI 助手，请友好地回答用户的问题。";
+            String skillPrompts = skillReg.allSystemPrompts();
+            if (!skillPrompts.isEmpty()) {
+                sysMsg = sysMsg + "\n" + skillPrompts;
+            }
+            String fileSkills = fileSkillLoader.getAllPrompts();
+            sysMsg = sysMsg + fileSkills;
+
             var builder = AiServices.builder(Assistant.class)
                     .chatModel(model).chatMemory(memory)
-                    .maxToolCallingRoundTrips(20);   // ← 加这一行
-            if (tools != null && !tools.isEmpty()) {
-                builder.tools(tools.toArray());
+                    .maxToolCallingRoundTrips(20)
+                    .systemMessage(sysMsg);
+            if (skillTools != null && !skillTools.isEmpty()) {
+                builder.tools(skillTools.toArray());
+            }
+            if (autoTools != null && !autoTools.isEmpty()) {
+                builder.tools(autoTools.toArray());
+            }
+            if (mcpToolProvider != null) {
+                builder.toolProvider(mcpToolProvider);
             }
             this.agent = builder.build();
         }
@@ -102,17 +134,9 @@ public class ConversationManager {
     public void init() {
         hookRegistry.register(tokenCounter);
         hookRegistry.register(new PersistHook(this));
-        skillRegistry.register(new Skill() {
-            public String name() { return "session"; }
-            public String description() { return "会话管理：列出、创建、切换会话"; }
-            public Object toolInstance() { return sessionTool; }
-        });
-        skillRegistry.register(new Skill() {
-            public String name() { return "subtask"; }
-            public String description() { return "子任务：创建、查询异步子任务"; }
-            public Object toolInstance() { return subTaskTool; }
-        });
         sessionStore.loadAll();
+        mcpIntegration.scanAndConnect();
+
         // 从持久化文件恢复会话
         var stored = sessionStore.getAllSessions();
         for (var entry : stored.entrySet()) {
@@ -120,41 +144,56 @@ public class ConversationManager {
             String name = entry.getValue();
             if (!sessions.containsKey(id)) {
                 Session s = new Session(id, name);
-                sessions.put(id, new SessionAgent(s, getOrCreateModel(), skillRegistry.allToolInstances()));
+                sessions.put(id, new SessionAgent(s, chatModel,
+                        skillRegistry.allToolInstances(), autoTools, skillRegistry, fileSkillLoader,
+                        this.mcpToolProvider));
+                // 恢复会话时也恢复根 AgentNode
+                var existingRoot = subAgentManager.getSessionRoot(id);
+                if (existingRoot == null) {
+                    subAgentManager.createAgentWithId(id, name, null, "你是一个 AI 助手，负责与用户对话。");
+                }
             }
         }
         log.info("ConversationManager 初始化完成, 共 {} 个活跃会话", sessions.size());
     }
 
-    private ChatModel getOrCreateModel() {
-        if (model == null) {
-            model = OpenAiChatModel.builder()
-                    .apiKey(apiKey).baseUrl("https://api.deepseek.com")
-                    .modelName("deepseek-chat").temperature(0.7)
-                    .build();
-        }
-        return model;
-    }
-
     public SkillRegistry getSkillRegistry() { return skillRegistry; }
     public HookRegistry getHookRegistry() { return hookRegistry; }
 
+    /**
+     * 新建会话
+     * @param name
+     * @return
+     */
     public String createSession(String name) {
         Session s = new Session(name);
-        sessions.put(s.getId(), new SessionAgent(s, getOrCreateModel(), skillRegistry.allToolInstances()));
+        sessions.put(s.getId(), new SessionAgent(s, chatModel,
+                skillRegistry.allToolInstances(), autoTools, skillRegistry, fileSkillLoader,
+                this.mcpToolProvider));
         sessionStore.saveSummary(s.getId(), name, "新会话: " + name);
+        // 创建根 AgentNode，以会话 ID 作为主 Agent ID
+        subAgentManager.createAgentWithId(s.getId(), name, null, "你是一个 AI 助手，负责与用户对话。");
         setActiveSessionId(s.getId());
         return s.getId();
     }
 
+    public String getRootAgentId() {
+        return getActiveSessionId();
+    }
+
+    /**
+     * 聊天主方法
+     * @param sessionId
+     * @param message
+     * @return
+     */
     public String chat(String sessionId, String message) {
         SessionAgent sa = sessions.get(sessionId);
         if (sa == null) return "会话不存在: " + sessionId;
 
-        // 检查是否有子任务完成，注入结果到记忆
         var completed = subTaskManager.pollCompletion(sessionId);
         if (completed != null) {
-            sa.memory.add(new dev.langchain4j.data.message.SystemMessage(
+            sa.memory.add(new SystemMessage(
                     "子任务 [" + completed.taskId() + "] " + completed.description() + " 已完成，结果如下:\n" + completed.result()));
         }
 
@@ -234,6 +273,7 @@ public class ConversationManager {
         SessionAgent sa = sessions.get(sessionId);
         if (sa == null) return;
 
+        // 获取agent的所有消息列表
         List<ChatMessage> all = sa.memory.messages();
         List<ChatMessage> rawMessages = all.stream()
                 .filter(m -> !(m instanceof SystemMessage)).toList();
@@ -241,9 +281,12 @@ public class ConversationManager {
         if (rawMessages.size() <= MAX_VERBATIM) return;
 
         int compressCount = rawMessages.size() - MAX_VERBATIM;
+        // 得到前几条消息
         List<ChatMessage> toCompress = rawMessages.subList(0, compressCount);
+        // 拿到后几条消息
         List<ChatMessage> keep = rawMessages.subList(compressCount, rawMessages.size());
 
+        // 遍历获取上次压缩后的摘要
         String existingSummary = "";
         for (ChatMessage msg : all) {
             if (msg instanceof SystemMessage sm && sm.text() != null
@@ -252,6 +295,7 @@ public class ConversationManager {
             }
         }
 
+        // 把要压缩的话拼出来
         StringBuilder content = new StringBuilder();
         for (ChatMessage msg : toCompress) {
             if (msg instanceof UserMessage um) {
@@ -262,7 +306,7 @@ public class ConversationManager {
         }
 
         try {
-            String newSummaryPart = getOrCreateModel().chat("""
+            String newSummaryPart = chatModel.chat("""
                     以下是需要总结的对话内容，请用简洁的要点提炼关键信息(用户身份、偏好、约定等)。
                     %s
                     """.formatted(content));
@@ -271,7 +315,7 @@ public class ConversationManager {
             if (existingSummary.isEmpty()) {
                 merged = newSummaryPart;
             } else {
-                merged = getOrCreateModel().chat("""
+                merged = chatModel.chat("""
                         请合并以下两段关于用户的摘要，去重并保留所有重要信息:
                         --- 旧摘要 ---
                         %s

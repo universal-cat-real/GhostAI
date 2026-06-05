@@ -3,14 +3,12 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-
     <groupId>com.ghostcraft</groupId>
     <artifactId>ghostcraft</artifactId>
     <version>1.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
-
     <name>GhostCraft</name>
-    <description>AI Agent 搭建平台 — 基于 LangChain4j</description>
+    <description>AI Agent 搭建平台</description>
 
     <modules>
         <module>gc-core</module>
@@ -18,7 +16,6 @@
         <module>gc-memory</module>
         <module>gc-skill</module>
         <module>gc-skill-basic</module>
-        <!-- gc-hook 已合并到 gc-core -->
         <module>gc-security</module>
         <module>gc-mcp</module>
         <module>gc-subagent</module>
@@ -53,7 +50,12 @@
                 <scope>import</scope>
             </dependency>
 
-            <!-- Internal modules -->
+            <dependency>
+                <groupId>dev.langchain4j</groupId>
+                <artifactId>langchain4j-mcp</artifactId>
+                <version>1.15.1-beta25</version>
+            </dependency>
+
             <dependency>
                 <groupId>com.ghostcraft</groupId>
                 <artifactId>gc-core</artifactId>
@@ -74,10 +76,19 @@
                 <artifactId>gc-skill-basic</artifactId>
                 <version>${project.version}</version>
             </dependency>
-            <!-- gc-hook 已合并到 gc-core -->
             <dependency>
                 <groupId>com.ghostcraft</groupId>
                 <artifactId>gc-security</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ghostcraft</groupId>
+                <artifactId>gc-subagent</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ghostcraft</groupId>
+                <artifactId>gc-team</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
@@ -96,16 +107,6 @@
                 <groupId>org.slf4j</groupId>
                 <artifactId>slf4j-simple</artifactId>
                 <version>${slf4j.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.ghostcraft</groupId>
-                <artifactId>gc-subagent</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.ghostcraft</groupId>
-                <artifactId>gc-team</artifactId>
-                <version>${project.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

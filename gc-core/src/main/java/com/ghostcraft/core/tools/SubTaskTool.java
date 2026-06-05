@@ -9,7 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
-public class SubTaskTool {
+public class SubTaskTool implements GhostTool {
 
     @Autowired
     private SubTaskManager subTaskManager;
@@ -34,7 +34,7 @@ public class SubTaskTool {
         StringBuilder sb = new StringBuilder("子任务列表：\n");
         for (SubTask t : list) {
             sb.append("  [").append(t.getId()).append("] ")
-                    .append(t.getDescription()).append(" — ").append(t.getStatus()).append("\n");
+                    .append(t.getDescription()).append(" -- ").append(t.getStatus()).append("\n");
         }
         return sb.toString();
     }

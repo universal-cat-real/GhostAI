@@ -23,6 +23,18 @@ public class SkillRegistry {
         return skills.values().stream().map(Skill::toolInstance).toList();
     }
 
+    public String allSystemPrompts() {
+        StringBuilder sb = new StringBuilder();
+        for (Skill skill : skills.values()) {
+            String prompt = skill.systemPrompt();
+            if (prompt != null && !prompt.isBlank()) {
+                sb.append("【").append(skill.name()).append("】\n");
+                sb.append(prompt).append("\n\n");
+            }
+        }
+        return sb.toString().trim();
+    }
+
     public Skill get(String name) { return skills.get(name); }
     public List<Skill> list() { return List.copyOf(skills.values()); }
     public int count() { return skills.size(); }

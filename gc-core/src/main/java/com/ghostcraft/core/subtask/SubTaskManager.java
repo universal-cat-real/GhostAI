@@ -27,6 +27,13 @@ public class SubTaskManager {
     @Value("${ghostcraft.api-key}")
     private String apiKey;
 
+    /**
+     * 已完成的子任务的结果
+     * @param sessionId
+     * @param taskId
+     * @param description
+     * @param result
+     */
     public record CompletionEvent(String sessionId, String taskId, String description, String result) {}
 
     public SubTask createTask(String description, String prompt) {
@@ -35,6 +42,12 @@ public class SubTaskManager {
         return task;
     }
 
+    /**
+     * 异步执行子任务
+     * @param task
+     * @param sessionId
+     * @return
+     */
     public CompletableFuture<SubTask> executeAsync(SubTask task, String sessionId) {
         task.start();
         return CompletableFuture.supplyAsync(() -> {

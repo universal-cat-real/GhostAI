@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 @Component
-public class SessionTool {
+public class SessionTool implements GhostTool {
 
     @Autowired
     private ConversationManager conversationManager;
@@ -24,8 +24,7 @@ public class SessionTool {
         for (Session s : sessions) {
             String marker = s.getId().equals(activeId) ? " [当前]" : "";
             sb.append("  ID: ").append(s.getId())
-                    .append(" | 名称: ").append(s.getName())
-                    .append(marker).append("\n");
+                    .append(" | 名称: ").append(s.getName()).append(marker).append("\n");
         }
         return sb.toString();
     }
@@ -34,9 +33,7 @@ public class SessionTool {
     public String switchSession(@P("要切换到的会话 ID") String sessionId) {
         boolean exists = conversationManager.listSessions().stream()
                 .anyMatch(s -> s.getId().equals(sessionId));
-        if (!exists) {
-            return "会话不存在: " + sessionId;
-        }
+        if (!exists) return "会话不存在: " + sessionId;
         conversationManager.setActiveSessionId(sessionId);
         return "已切换到会话: " + sessionId;
     }

@@ -21,7 +21,9 @@ public class SessionStore {
     private static final Path STORE_DIR = Paths.get(System.getProperty("user.home"), ".ghostcraft", "sessions");
     private final ObjectMapper mapper = new ObjectMapper();
 
-    /** 内存中缓存的摘要：sessionId → 摘要文本 */
+    /**
+     *  内存中缓存的摘要：sessionId → 摘要文本
+     */
     private final Map<String, String> summaries = new ConcurrentHashMap<>();
 
     public SessionStore() {
@@ -33,7 +35,9 @@ public class SessionStore {
         }
     }
 
-    /** 保存会话的摘要 */
+    /**
+     * 保存会话的摘要
+     */
     public void saveSummary(String sessionId, String sessionName, String summary) {
         summaries.put(sessionId, summary);
         File file = STORE_DIR.resolve(sessionId + ".json").toFile();

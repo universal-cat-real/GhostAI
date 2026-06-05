@@ -17,4 +17,9 @@ public interface Skill {
 
     /** 获取这个技能包含有的工具对象（@Tool 注解所在的实例） */
     Object toolInstance();
+
+    /** 系统提示词（markdown 格式），默认返回空字符串 */
+    default String systemPrompt() {
+        return "";
+    }
 }
