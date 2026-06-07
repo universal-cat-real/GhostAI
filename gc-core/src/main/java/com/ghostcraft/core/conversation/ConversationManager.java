@@ -1,26 +1,24 @@
 package com.ghostcraft.core.conversation;
 
+import com.ghostcraft.core.agent.SubAgentManager;
 import com.ghostcraft.core.hook.HookRegistry;
 import com.ghostcraft.core.hook.PersistHook;
 import com.ghostcraft.core.hook.TokenCounterHook;
+import com.ghostcraft.core.mcp.McpIntegration;
 import com.ghostcraft.core.model.Session;
 import com.ghostcraft.core.skill.FileSkillLoader;
-import com.ghostcraft.core.skill.Skill;
 import com.ghostcraft.core.skill.SkillRegistry;
 import com.ghostcraft.core.store.SessionStore;
 import com.ghostcraft.core.subtask.SubTaskManager;
-import com.ghostcraft.core.mcp.McpIntegration;
-import dev.langchain4j.mcp.McpToolProvider;
 import com.ghostcraft.core.tools.GhostTool;
-import com.ghostcraft.core.agent.SubAgentManager;
 import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.SystemMessage;
 import dev.langchain4j.data.message.UserMessage;
+import dev.langchain4j.mcp.McpToolProvider;
 import dev.langchain4j.memory.ChatMemory;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 import dev.langchain4j.model.chat.ChatModel;
-
 import dev.langchain4j.service.AiServices;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
@@ -66,17 +64,12 @@ public class ConversationManager {
     @Autowired
     private SubAgentManager subAgentManager;
 
-    private McpToolProvider mcpToolProvider;
-
-    private ChatModel model;
-    private final Map<String, SessionAgent> sessions = new HashMap<>();
-    private String activeSessionId;
-
     @Autowired
     private ChatModel chatModel;
 
-    @Value("${ghostcraft.api-key}")
-    private String apiKey;
+    private McpToolProvider mcpToolProvider;
+    private final Map<String, SessionAgent> sessions = new HashMap<>();
+    private String activeSessionId;
 
     public interface Assistant {
         String chat(String userMessage);
@@ -135,9 +128,8 @@ public class ConversationManager {
         hookRegistry.register(tokenCounter);
         hookRegistry.register(new PersistHook(this));
         sessionStore.loadAll();
-        mcpIntegration.scanAndConnect();
+        mcpToolProvider = mcpIntegration.scanAndConnect();
 
-        // 从持久化文件恢复会话
         var stored = sessionStore.getAllSessions();
         for (var entry : stored.entrySet()) {
             String id = entry.getKey();
@@ -146,8 +138,7 @@ public class ConversationManager {
                 Session s = new Session(id, name);
                 sessions.put(id, new SessionAgent(s, chatModel,
                         skillRegistry.allToolInstances(), autoTools, skillRegistry, fileSkillLoader,
-                        this.mcpToolProvider));
-                // 恢复会话时也恢复根 AgentNode
+                        mcpToolProvider));
                 var existingRoot = subAgentManager.getSessionRoot(id);
                 if (existingRoot == null) {
                     subAgentManager.createAgentWithId(id, name, null, "你是一个 AI 助手，负责与用户对话。");
@@ -160,18 +151,12 @@ public class ConversationManager {
     public SkillRegistry getSkillRegistry() { return skillRegistry; }
     public HookRegistry getHookRegistry() { return hookRegistry; }
 
-    /**
-     * 新建会话
-     * @param name
-     * @return
-     */
     public String createSession(String name) {
         Session s = new Session(name);
         sessions.put(s.getId(), new SessionAgent(s, chatModel,
                 skillRegistry.allToolInstances(), autoTools, skillRegistry, fileSkillLoader,
-                this.mcpToolProvider));
+                mcpToolProvider));
         sessionStore.saveSummary(s.getId(), name, "新会话: " + name);
-        // 创建根 AgentNode，以会话 ID 作为主 Agent ID
         subAgentManager.createAgentWithId(s.getId(), name, null, "你是一个 AI 助手，负责与用户对话。");
         setActiveSessionId(s.getId());
         return s.getId();
@@ -181,12 +166,12 @@ public class ConversationManager {
         return getActiveSessionId();
     }
 
-    /**
-     * 聊天主方法
-     * @param sessionId
-     * @param message
-     * @return
-     */
+    public List<ChatMessage> getSessionMessages(String sessionId) {
+        SessionAgent sa = sessions.get(sessionId);
+        if (sa == null) return List.of();
+        return sa.memory.messages();
+    }
+
     public String chat(String sessionId, String message) {
         SessionAgent sa = sessions.get(sessionId);
         if (sa == null) return "会话不存在: " + sessionId;
@@ -273,7 +258,6 @@ public class ConversationManager {
         SessionAgent sa = sessions.get(sessionId);
         if (sa == null) return;
 
-        // 获取agent的所有消息列表
         List<ChatMessage> all = sa.memory.messages();
         List<ChatMessage> rawMessages = all.stream()
                 .filter(m -> !(m instanceof SystemMessage)).toList();
@@ -281,12 +265,9 @@ public class ConversationManager {
         if (rawMessages.size() <= MAX_VERBATIM) return;
 
         int compressCount = rawMessages.size() - MAX_VERBATIM;
-        // 得到前几条消息
         List<ChatMessage> toCompress = rawMessages.subList(0, compressCount);
-        // 拿到后几条消息
         List<ChatMessage> keep = rawMessages.subList(compressCount, rawMessages.size());
 
-        // 遍历获取上次压缩后的摘要
         String existingSummary = "";
         for (ChatMessage msg : all) {
             if (msg instanceof SystemMessage sm && sm.text() != null
@@ -295,7 +276,6 @@ public class ConversationManager {
             }
         }
 
-        // 把要压缩的话拼出来
         StringBuilder content = new StringBuilder();
         for (ChatMessage msg : toCompress) {
             if (msg instanceof UserMessage um) {

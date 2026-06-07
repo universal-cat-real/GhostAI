@@ -24,6 +24,10 @@
             <groupId>com.ghostcraft</groupId>
             <artifactId>gc-skill-basic</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.ghostcraft</groupId>
+            <artifactId>gc-memory</artifactId>
+        </dependency>
     </dependencies>
     <build>
         <plugins>

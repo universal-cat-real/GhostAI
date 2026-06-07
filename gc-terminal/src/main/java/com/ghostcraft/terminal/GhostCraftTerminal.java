@@ -3,8 +3,6 @@ package com.ghostcraft.terminal;
 import com.ghostcraft.core.command.Command;
 import com.ghostcraft.core.command.CommandRegistry;
 import com.ghostcraft.core.conversation.ConversationManager;
-import com.ghostcraft.core.hook.PersistHook;
-import com.ghostcraft.skillbasic.FileSkill;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,12 +26,6 @@ public class GhostCraftTerminal {
     @Autowired
     private MemoryCommand memoryCommand;
 
-    @Autowired
-    private PersistHook persistHook;
-
-    @Autowired
-    private FileSkill fileSkill;
-
     @FunctionalInterface
     private interface CommandHandler {
         String handle(String args);
@@ -47,29 +39,19 @@ public class GhostCraftTerminal {
         registerCommands();
     }
 
-    /**
-     * 编写skill文件
-     * 在这里加载skill
-     */
     private void loadSkills() {
         log.info("正在加载技能包...");
         try {
             cm.getSkillRegistry().register(new com.ghostcraft.skillbasic.SystemSkill());
-            cm.getSkillRegistry().register(fileSkill);
         } catch (Exception e) {
             log.warn("技能包加载失败: {}", e.getMessage());
         }
         log.info("技能包加载完成，共 {} 个", cm.getSkillRegistry().count());
     }
 
-    /**
-     * 编写hook钩子文件
-     * 在这里注册hook钩子
-     */
     private void loadHooks() {
         log.info("正在加载钩子...");
         cm.getHookRegistry().register(new LoggingHook());
-        cm.getHookRegistry().register(persistHook);
         log.info("钩子加载完成，共 {} 个", cm.getHookRegistry().count());
     }
 
@@ -135,12 +117,11 @@ public class GhostCraftTerminal {
         if (list.isEmpty()) return "未加载任何技能包";
         StringBuilder sb = new StringBuilder("已加载的技能包：\n");
         for (var skill : list) {
-            sb.append("  ").append(skill.name()).append(" — ").append(skill.description()).append("\n");
+            sb.append("  ").append(skill.name()).append(" -- ").append(skill.description()).append("\n");
         }
         return sb.toString();
     }
 
-    /** 简写：获取当前会话 ID */
     private String getSid() { return cm.getActiveSessionId(); }
 
     public void start() {
